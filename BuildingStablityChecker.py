@@ -132,7 +132,8 @@ if __name__ == "__main__":
         wait_for_serverup()
  
         # Run the RCON command to check buildings
-        report.write("Testing "+currdb[0:4]+"\n")
+        # report.write("Testing "+currdb[0:4]+"\n")
+        report.write("Running " + args.rconcommand + " on " + currdb[0:4]+"\n")
         with MCRcon("127.0.0.1", args.rconpassword, port=args.rconport) as mcr:
             # resp = mcr.command("validateallbuildings")
             resp = mcr.command(args.rconcommand)
