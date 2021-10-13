@@ -71,11 +71,9 @@ if __name__ == "__main__":
     db_source_dir = args.dbdir
     
     APPID = "443030" #Dedicated server appid
+
     game_folder = steampath.folderOfMyApp(steampath.getSteamLibraryFolders(), APPID)
-    # print(game_folder)
-    game_folder = os.path.abspath(game_folder)
-    # print(os.path.abspath(game_folder + r"\ConanSandbox\Saved\dlc_siptah.db"))
-    # print(os.path.abspath(game_folder + r"\ConanSandbox\Saved\game.db"))
+    # game_folder = os.path.abspath(game_folder)
 
     # Crafting the server startup lines
     siptah_start = [game_folder + r"\Conan Exiles Dedicated Server\ConanSandboxServer.exe", "/Game/DLC_EXT/DLC_Siptah/Maps/DLC_Isle_of_Siptah"]
@@ -91,7 +89,7 @@ if __name__ == "__main__":
     
 
     # Report setup
-    searchedError = args.searchederror
+    searched_error = args.searchederror
     report_error_count = 0
     report_summary = ["Report Summary:\n"]
 
@@ -114,6 +112,7 @@ if __name__ == "__main__":
     now = datetime.now()
     #currentrunlog = now.strftime("%Y-%m%d-%H%M")
     report = open("stability_report-"+now.strftime("%Y-%m-%d-%H%M")+".log", "w")
+    #report = open(r"C:\Users\hygha\Documents\StabilityTesting\ExilesDBs"+"stability_report-"+now.strftime("%Y-%m-%d-%H%M")+".log", "w")
     #report = open("report"+currentrunlog+".log", "w")
 
     for currdb in zipped_file_list:
@@ -135,7 +134,6 @@ if __name__ == "__main__":
         # report.write("Testing "+currdb[0:4]+"\n")
         report.write("Running " + args.rconcommand + " on " + currdb[0:4]+"\n")
         with MCRcon("127.0.0.1", args.rconpassword, port=args.rconport) as mcr:
-            # resp = mcr.command("validateallbuildings")
             resp = mcr.command(args.rconcommand)
             report.write(resp+"\n")
             print(f"RCON command {args.rconcommand} response: {resp}")
@@ -147,16 +145,16 @@ if __name__ == "__main__":
         # Open ConanSandbox.log and check for error lines
         time.sleep(10) # wait for log to finish being written to
         report_error_count = 0
-        with open(game_folder + r"\Conan Exiles Dedicated Server\ConanSandbox\Saved\Logs\ConanSandbox.log", "r") as my_log:
+        with open(game_folder + r"\Conan Exiles Dedicated Server\ConanSandbox\Saved\Logs\ConanSandbox.log", "r", encoding='utf8') as my_log:
             for line in my_log:
-                if searchedError in line:
+                if searched_error in line:
                     report_error_count += 1
                     report.write(line)                    
                     
         time.sleep(5)
         report.write("End testing of "+localunzipped+"\n")
 
-        report_summary.append(f"{currdb}: {searchedError} {report_error_count}\n")
+        report_summary.append(f"{currdb}: {searched_error} {report_error_count}\n")
 
     for line in report_summary:
         report.write(line)

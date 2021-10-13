@@ -51,7 +51,7 @@ def folderOfMyApp(paths, appID):
     for dir in paths:
         # print(dir+r"\steamapps\appmanifest_" + appID + ".acf")
         if os.path.isfile(dir + r"\steamapps\appmanifest_" + appID + ".acf"):
-            return (dir + r"\steamapps\common")
+            return (os.path.abspath(dir + r"\steamapps\common"))
         
 if __name__ == "__main__":
     appID = "443030" # Conan Exiles Dedicated Server
