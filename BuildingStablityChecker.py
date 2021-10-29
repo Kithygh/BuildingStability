@@ -19,6 +19,16 @@ def follow(thefile):
             continue
         yield line
 
+def unzip_game_db(gamedbxz):
+    unzipped = gamedbxz[0:4]+"-unzipped.db"
+    out = open(unzipped, "wb")
+    with lzma.open(db_source_dir+"\\"+gamedbxz) as f:
+        file_content = f.read()
+    out.write(file_content)
+    out.close()
+    print("Unzipped "+gamedbxz+" to "+unzipped)
+    return unzipped
+
 def launch_dedicated_server(gamedb):
             # Open db and get the map column from actor_position table
         con = sqlite3.connect(gamedb)
@@ -88,13 +98,9 @@ if __name__ == "__main__":
     file_list = os.listdir(db_source_dir)
     
 
-    # Report setup
-    searched_error = args.searchederror
-    report_error_count = 0
-    report_summary = ["Report Summary:\n"]
 
-    # print(db_source_dir)
-    # print(game_folder)
+
+
     print("Looking for files in : "+db_source_dir)
 
 
@@ -107,35 +113,38 @@ if __name__ == "__main__":
     for f in zipped_file_list:
         print(f)
 
-
+    # Report setup
+    searched_error = args.searchederror
+    report_error_count = 0
+    report_summary = ["Report Summary:\n"]
     #Open report file
     now = datetime.now()
-    #currentrunlog = now.strftime("%Y-%m%d-%H%M")
     report = open("stability_report-"+now.strftime("%Y-%m-%d-%H%M")+".log", "w")
-    #report = open(r"C:\Users\hygha\Documents\StabilityTesting\ExilesDBs"+"stability_report-"+now.strftime("%Y-%m-%d-%H%M")+".log", "w")
-    #report = open("report"+currentrunlog+".log", "w")
 
-    for currdb in zipped_file_list:
+    # Look at each database, run rcon command, search for specified error
+    for database in zipped_file_list:
 
         report_error_count = 0
         # Open and uncompress the zipped file, write it locally
-        localunzipped = currdb[0:4]+"-unzipped.db"
-        out = open(localunzipped, "wb")
-        with lzma.open(db_source_dir+"\\"+currdb) as f:
-            file_content = f.read()
-        out.write(file_content)
-        out.close()
-        print("Unzipped "+currdb+" to "+localunzipped)
 
+        # localunzipped = database[0:4]+"-unzipped.db"
+        # out = open(localunzipped, "wb")
+        # with lzma.open(db_source_dir+"\\"+database) as f:
+        #     file_content = f.read()
+        # out.write(file_content)
+        # out.close()
+        # print("Unzipped "+database+" to "+localunzipped)
+
+        localunzipped = unzip_game_db(database)
         launch_dedicated_server(localunzipped)
         wait_for_serverup()
  
         # Run the RCON command to check buildings
         # report.write("Testing "+currdb[0:4]+"\n")
-        report.write("Running " + args.rconcommand + " on " + currdb[0:4]+"\n")
+        report.write("Running " + args.rconcommand + " on " + database[0:4]+"\n")
         with MCRcon("127.0.0.1", args.rconpassword, port=args.rconport) as mcr:
             resp = mcr.command(args.rconcommand)
-            report.write(resp+"\n")
+            report.write(f"RCON command {args.rconcommand} response: {resp}"+"\n")
             print(f"RCON command {args.rconcommand} response: {resp}")
 
         # Shut down the server and wait for it to finish shutting down
@@ -154,7 +163,7 @@ if __name__ == "__main__":
         time.sleep(5)
         report.write("End testing of "+localunzipped+"\n")
 
-        report_summary.append(f"{currdb}: {searched_error} {report_error_count}\n")
+        report_summary.append(f"{database}: {searched_error} {report_error_count}\n")
 
     for line in report_summary:
         report.write(line)
