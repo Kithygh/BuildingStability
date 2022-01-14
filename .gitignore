@@ -1,1 +1,7 @@
 *.log
+*.pyc
+id_rsa
+passphrase
+ssh.config
+ExilesDBs/
+ZippedDbs/
