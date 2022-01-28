@@ -1,71 +1,36 @@
-import sys
-import os.path
 import winreg
-
-
+import pathlib
+import re
 
 # Get steam path from registry
-# Check that path for the appmanifest
-# If not there, look at libraryfolders.vdf for other folders to check
-# Wherever the appmanifest exists, do some text manip to get the actual exe path
+# Check steam path and paths in libraryfolders.vdf
+# Determine the folder that has the appmanifest for the appid given
+# Return the base steam library folder for the app
 
-def getSteamLibraryFolders():
-    hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\WOW6432Node\Valve\Steam")
-    # print(hkey)
-    steam_path = winreg.QueryValueEx(hkey, "InstallPath")
-    # print(steam_path[0])
+def steam_library_folders() -> list:
+    hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\WOW6432Node\Valve\Steam")   
+    steam_path = winreg.QueryValueEx(hkey, "InstallPath")[0]
+    library_folders = pathlib.Path(steam_path, r"steamapps/libraryfolders.vdf")
     folderList = []
-    folderList.append(steam_path[0])
-    # print(folderList)
+    folderList.append(steam_path)
 
-    with open(steam_path[0]+"/steamapps/libraryfolders.vdf", "r") as f:
-    # with open(steam_path[0]+"/steamapps/customlibraryfolders.vdf", "r") as f:  testing line
-        content = f.read().splitlines()
-        del content[-1:] #strips out closing brace
-        del content[:4] # strips out title and opening brace 
-        # print(content)
-        for i in content:
-            #print(i)
-            i = i.replace("\t", "")
-            i = i.replace("\"\"", "")
-            i = i.replace("path", "")
-            i = i.replace("\"", "")            
-            #i = i.replace("\"", "")
-            # i = i.replace(":\\", r":\")   This can't work. Can't escape trailing backslashes
-            # print(i)
-            if os.path.isdir(i):
-                # print(i + " is a directory")
-                folderList.append(i)
-            #folderList.append(i[1:])
-        # print(content)
-
-    # for f in folderList:
-    #     print(os.path.isdir(f))
-    #     print(os.path.normpath(f))
-    #print(folderList)
-    #print("whereamI")
-    return folderList
+    with library_folders.open() as f:
+        for line in f:
+            if "path" in line:
+                possible_path = pathlib.Path(re.search(r"""(?<="path"\t\t").*(?=")""", line).group(), "steamapps")
+                folderList.append(possible_path)
     winreg.CloseKey(hkey)
+    return folderList    
 
-def folderOfMyApp(paths, appID):
-    for dir in paths:
-        # print(dir+r"\steamapps\appmanifest_" + appID + ".acf")
-        if os.path.isfile(dir + r"\steamapps\appmanifest_" + appID + ".acf"):
-            return (os.path.abspath(dir + r"\steamapps\common"))
-        
-if __name__ == "__main__":
+def get_steam_folder(appID: str) -> pathlib.Path:
+    for dir in steam_library_folders():
+        p = pathlib.Path(dir).joinpath(f"appmanifest_{appID}.acf")
+        if p.exists():
+            return pathlib.Path(dir,"common")
+
+def main() -> None:
     appID = "443030" # Conan Exiles Dedicated Server
+    print(f"Game base directory is: {get_steam_folder(appID)}")
 
-    myPaths = getSteamLibraryFolders()
-    # print(myPaths)
-
-    # gameDir = folderOfMyApp(myPaths, appID)
-    # print(gameDir)
-    print("Game base directory is: " + folderOfMyApp(myPaths, appID))
-
-# if os.path.isfile(steam_path[0]+"\\steamapps\\appmanifest_228981.acf"):
-#     print("file found")
-# else:
-#     getSteamLibraryFolders(steam_path[0]+"\\steamapps\libraryfolders.vdf")
-
-
+if __name__ == "__main__":
+   main()

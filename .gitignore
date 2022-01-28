@@ -2,6 +2,8 @@
 *.pyc
 id_rsa
 passphrase
-ssh.config
+*.config
 ExilesDBs/
-ZippedDbs/
+ZippedDBs/
+OldZippedDBs
+scratchpad.py
